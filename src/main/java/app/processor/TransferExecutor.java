@@ -23,6 +23,7 @@ import static org.jooq.generated.tables.Transfers.TRANSFERS;
 
 @Slf4j
 public class TransferExecutor implements Runnable {
+    private static long SLEEP_TIME = 500;
     public Thread t;
     private volatile boolean running = true;
     TransferRepository transferRepository;
@@ -38,8 +39,6 @@ public class TransferExecutor implements Runnable {
 
     @Override
     public void run() {
-        //for testing purposes
-        sleep(100);
         while (running) {
             Optional<TransfersRecord> transferToExecute = Optional.ofNullable(transferRepository.getNextTransferForExecution());
             if (transferToExecute.isPresent()) {
@@ -51,9 +50,9 @@ public class TransferExecutor implements Runnable {
                 markTransferAsInProgress(transfer);
                 ProcessingResult processingResult = doProcessing(transfer);
                 produceEvent(transfer, processingResult);
-                log.info("Sleeping for 500ms after processing attempt");
+                log.info("Sleeping for {}ms after processing attempt", SLEEP_TIME);
             }
-            sleep(500);
+            sleep(SLEEP_TIME);
         }
     }
 
@@ -72,7 +71,7 @@ public class TransferExecutor implements Runnable {
         try {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error("Thread interrupted: {}", e.getMessage());
         }
     }
 
